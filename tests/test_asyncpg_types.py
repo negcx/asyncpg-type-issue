@@ -38,6 +38,20 @@ async def test_asyncpg_interval():
     )
     conn.close()
 
+@pytest.mark.asyncio
+async def test_asyncpg_interval_cast():
+    """
+    syncpg.exceptions.DataError: invalid input for query argument $1:
+    '14 day' ('str' object has no attribute 'days')
+    """
+    conn = await asyncpg.connect(DSN)
+    await conn.execute(TABLE)
+    await conn.execute(
+        "select id, date from asyncpg_issue where date > now() + $1::interval",
+        '14 day'
+    )
+    conn.close()
+
 def test_psycopg_integer_cast():
     conn = psycopg2.connect(dsn=DSN)
     cur = conn.cursor()
@@ -61,3 +75,15 @@ def test_psycopg_interval():
     cur.close()
     conn.close()
     
+def test_psycopg_interval_cast():
+    conn = psycopg2.connect(dsn=DSN)
+    cur = conn.cursor()
+
+    cur.execute(TABLE)
+    cur.execute(
+        "select id, date from asyncpg_issue where date > now() + %s::interval",
+        ("14 day",)
+    )
+
+    cur.close()
+    conn.close()
